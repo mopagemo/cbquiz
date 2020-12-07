@@ -61,7 +61,14 @@ setupTelnet(1337);
 
 function handleInput(socket, state, input) {
     if(!state.has_name) {
+        socket.info(`name set to ${input}`);
         return save_name(socket, state, input);
+    }
+
+    if(input == 'change_name') {
+        socket.send('Enter a new name:');
+        state.has_name = false;
+        return;
     }
 
     if(!gameStarted) {
@@ -381,8 +388,8 @@ function setupRequestHandler() {
                 };
             }
 
-            state[req.headers.sessionid].answer = answer;
-            state[req.headers.sessionid].answeredAt = new Date();
+            setAnswer(state[req.headers.sessionid], state[req.headers.sessionid].answer);
+
             res.end(JSON.stringify({
                 success: true,
                 setTo: answer
@@ -491,7 +498,7 @@ function setupTelnet(port) {
             save_name(socket, state[socket.remoteAddress], state[socket.remoteAddress].player_name);
         }
         else {
-            socket.send('Enter your player name (once set you cannot change it):');
+            socket.send('Enter your player name (change later with "change_name"):');
         }
 
         socket.on('data', function(data) {
@@ -552,7 +559,7 @@ function evaluateAnswer(players, playerId, question) {
     }
 
     // Answer selected fewest times
-    if(question['Special Flag'] === 1) {
+    if(question['Special Flag'] == 1) {
         let answerCount = [999, 0,0,0,0];
         for(let countPlayer in players) {
             if(!players[countPlayer].answer) {
@@ -574,7 +581,7 @@ function evaluateAnswer(players, playerId, question) {
         return { correctAnswer: answerCount.indexOf(highestCount), answeredCorrectly: false };
     }
     // The fastest to choose
-    else if(question['Special Flag'] === 2) {
+    else if(question['Special Flag'] == 2) {
         let fastestTime = new Date().getTime();
         let fastestPlayer = undefined;
 
@@ -587,7 +594,7 @@ function evaluateAnswer(players, playerId, question) {
                 continue;
             }
 
-            if(players[countPlayer].answeredAt.getTime() < fastest) {
+            if(players[countPlayer].answeredAt.getTime() < fastestTime) {
                 fastestTime = players[countPlayer].answeredAt.getTime();
                 fastestPlayer = countPlayer;
             }
@@ -600,7 +607,7 @@ function evaluateAnswer(players, playerId, question) {
         }
     }
     // The last to choose
-    else if(question['Special Flag'] === 3) {
+    else if(question['Special Flag'] == 3) {
         let latestTime = 0;
         let latestPlayer = undefined;
 
@@ -620,9 +627,9 @@ function evaluateAnswer(players, playerId, question) {
         }
 
         if(latestPlayer === playerId) {
-            return { correctAnswer: 3, answeredCorrectly: true };
+            return { correctAnswer: 1, answeredCorrectly: true };
         } else {
-            return { correctAnswer: 3, answeredCorrectly: false };
+            return { correctAnswer: 1, answeredCorrectly: false };
         }
     }
     // Wat?
@@ -630,6 +637,21 @@ function evaluateAnswer(players, playerId, question) {
         logger.error('Invalid special flag');
         return { correctAnswer: 1, answeredCorrectly: true };
     }
+}
+
+function setAnswer(player, answer) {
+    if(!player.answer) {
+        logger.debug(`${player.player_name} sets answer to ${answer}`);
+        if(questions[questionCounter]['Special Flag'] == 2 && answer == 3) {
+            player.answeredAt = new Date();
+        } else if(questions[questionCounter]['Special Flag'] != 2) {
+            player.answeredAt = new Date();
+        }
+    } else {
+        logger.debug(`${player.player_name} changes answer to ${answer}`);
+    }
+
+    player.answer = answer;
 }
 
 function setupHTTP(port, requestHandler) {
