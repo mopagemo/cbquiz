@@ -381,7 +381,7 @@
         myHeaders.append('name', name);
         myHeaders.append('sessionid', sessionId);
 
-        const request = new Request('http://quiz.carapeto.pt' + postfix, {
+        const request = new Request(postfix, {
             method: 'POST',
             headers: {
                 name: name,

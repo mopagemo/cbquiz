@@ -169,7 +169,7 @@
             urlPostfix = '/status';
         }
         run++;
-        const request = new Request('http://quiz.carapeto.pt' + urlPostfix, {
+        const request = new Request(urlPostfix, {
             method: 'POST'
         });
         fetch(request)
