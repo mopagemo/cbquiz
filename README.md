@@ -13,7 +13,9 @@ server. Can be used via web browser or telnet/netcat.
 
 `npm install`
 
-Then start with `./quiz.js questions.csv`. `questions.csv` needs to look like this:
+Then start with `./quiz.js my-questions.csv` or just  `./quiz.js` which will use `questions.csv` file.
+
+`questions.csv` needs to look like this:
 
 ```
 Question,Answer 1,Answer 2,Answer 3,Answer 4,Difficulty (1-5 stars),Correct Answer

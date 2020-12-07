@@ -2,16 +2,14 @@
 
 /* jshint esversion: 6 */
 
-const colors = require('colors'),
-      csv = require('csvtojson'),
-      fs = require('fs'),
-      http = require('http'),
-      path = require('path'),
-      readline = require('readline'),
-      net  = require('net'),
-      util = require('util'),
-      winston = require('winston');
-
+const csv = require('csvtojson');
+const fs = require('fs');
+const http = require('http');
+const path = require('path');
+const readline = require('readline');
+const net = require('net');
+const util = require('util');
+const winston = require('winston');
 
 const {
     createLogger,
@@ -49,7 +47,6 @@ let questionCounter = -1;
 let QUESTION_TIME = 15;
 
 let state = {};
-let game = {};
 
 let hangingRequests = [];
 
@@ -57,32 +54,30 @@ loadQuestions();
 setupHTTP(3300, setupRequestHandler());
 setupTelnet(1337);
 
-
-
 function handleInput(socket, state, input) {
-    if(!state.has_name) {
+    if (!state.has_name) {
         socket.info(`name set to ${input}`);
         return save_name(socket, state, input);
     }
 
-    if(input == 'change_name') {
+    if (input === 'change_name') {
         socket.send('Enter a new name:');
         state.has_name = false;
         return;
     }
 
-    if(!gameStarted) {
+    if (!gameStarted) {
         socket.send('Chill out mate, we have not started yet'.red);
         return;
     }
 
-    if(!input.match(/^\d$/) || input > 4 || input < 1) {
+    if (!input.match(/^\d$/) || input > 4 || input < 1) {
         socket.send('Invalid answer. Choose 1-4.'.red);
         return;
     }
 
-    if(questionShowing) {
-        if(!state.answer || state.answer == input) {
+    if (questionShowing) {
+        if (!state.answer || state.answer === input) {
             socket.send(`Selected answer: ${input}`);
             state.answeredAt = new Date();
         } else {
@@ -96,7 +91,7 @@ function handleInput(socket, state, input) {
 
 function save_name(socket, state, input) {
     input = input.replace(/[^a-zA-Z]/g, '');
-    if(!input) {
+    if (!input) {
         socket.send('Invalid name. Try again.'.red);
         return
     }
@@ -109,29 +104,29 @@ function save_name(socket, state, input) {
 }
 
 function processAdmin(input) {
-    if (input == 'start') {
+    if (input === 'start') {
         questionCounter = 0;
         showQuestion(0);
     } else if (input.match(/q ?(\d+)/)) {
         questionCounter = parseInt(RegExp.$1);
         showQuestion(questionCounter);
-    } else if (input == 'next' || input == 'n') {
+    } else if (input === 'next' || input === 'n') {
         questionCounter++;
         showQuestion(questionCounter);
-    } else if (input == 'board' || input == 'stats') {
+    } else if (input === 'board' || input === 'stats') {
         showStats();
-    } else if (input == 'webboard' || input == 'webstats') {
+    } else if (input === 'webboard' || input === 'webstats') {
         showStats(true);
     } else if (input.match(/^time ?(\d+)$/)) {
         QUESTION_TIME = parseInt(RegExp.$1);
         logger.info('setting timeout to ' + QUESTION_TIME);
-    } else if (input == 'debug' || input == 'debug on') {
+    } else if (input === 'debug' || input === 'debug on') {
         logger.level = 'debug';
         logger.debug('debug enabled');
-    } else if (input == 'debug off') {
+    } else if (input === 'debug off') {
         logger.level = 'info';
         logger.info('debug disabled');
-    } else if (input == 'debug state') {
+    } else if (input === 'debug state') {
         for (let playerId in state) {
             logger.info(`* ${playerId}: ${player_name} - ${state[playerId].telnet ? 'telnet' : 'web'}`);
         }
@@ -146,7 +141,7 @@ function showQuestion(questionIndex) {
         return;
     }
 
-    logger.info(`Showing question ${questionIndex+1} / ${questions.length}`);
+    logger.info(`Showing question ${questionIndex + 1} / ${questions.length}`);
     gameStarted = true;
     questionShowing = true;
 
@@ -181,7 +176,7 @@ function showQuestion(questionIndex) {
 }
 
 function sendToTelnetPlayers(text) {
-    for(let playerAddress in state) {
+    for (let playerAddress in state) {
         let player = state[playerAddress];
         player.socket.send(text);
     }
@@ -199,7 +194,7 @@ function showResultAfterQuestion() {
 
     for (let playerAddress in state) {
         let player = state[playerAddress];
-        let {correctAnswer, answeredCorrectly} = evaluateAnswer(state, playerAddress, questions[questionCounter]);
+        let { correctAnswer, answeredCorrectly } = evaluateAnswer(state, playerAddress, questions[questionCounter]);
         logger.debug(`Player ${playerAddress} answered correctly: ${answeredCorrectly}. Correct answer: ${correctAnswer}`);
 
         someCorrectAnswer = correctAnswer;
@@ -241,8 +236,8 @@ function showResultAfterQuestion() {
 
     showStats(false, true);
 
-    if(questions[questionCounter+1]) {
-        logger.info(`Next question: ${questions[questionCounter+1].Question}`);
+    if (questions[questionCounter + 1]) {
+        logger.info(`Next question: ${questions[questionCounter + 1].Question}`);
     } else {
         logger.warn('That was the last question');
     }
@@ -284,11 +279,11 @@ function getStats(onlyHttp) {
 
         if (!prevPlayer) {
             rank = 1;
-        } else if (prevPlayer.correctAnswers != player.correctAnswers) {
+        } else if (prevPlayer.correctAnswers !== player.correctAnswers) {
             rank++;
         }
 
-        if(!onlyHttp) {
+        if (!onlyHttp) {
             sendToTelnetPlayers(`${rank}. ${player.player_name}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`);
             console.log(`${rank}. ${player.player_name}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`);
         }
@@ -313,7 +308,7 @@ function showStats(onlyHttp, withDelay) {
 
     let forWebsite = getStats(onlyHttp);
 
-    if(!onlyHttp) {
+    if (!onlyHttp) {
         sendToTelnetPlayers('');
     }
 
@@ -327,8 +322,6 @@ function showStats(onlyHttp, withDelay) {
     }, withDelay ? 500 : 0);
 }
 
-
-
 function setupRequestHandler() {
     return (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
@@ -339,13 +332,13 @@ function setupRequestHandler() {
 
         logger.debug(`${req.headers.name} - ${req.method} ${req.url}`);
 
-        if(req.method == 'OPTIONS') {
+        if (req.method === 'OPTIONS') {
             res.end();
             return;
         }
 
-        if(req.url == '/register-name') {
-            if(!req.headers.sessionid || !req.headers.name) {
+        if (req.url === '/register-name') {
+            if (!req.headers.sessionid || !req.headers.name) {
                 res.end(JSON.stringify({
                     success: false
                 }));
@@ -367,8 +360,7 @@ function setupRequestHandler() {
             return;
         }
 
-
-        if (req.url == '/start') {
+        if (req.url === '/start') {
             res.end(JSON.stringify({
                 round: questionCounter,
                 started: gameStarted
@@ -376,10 +368,10 @@ function setupRequestHandler() {
             return;
         }
 
-        if(req.url.match(/^\/answer\/(\d)$/)) {
+        if (req.url.match(/^\/answer\/(\d)$/)) {
             let answer = RegExp.$1;
 
-            if(!state[req.headers.sessionid]) {
+            if (!state[req.headers.sessionid]) {
                 logger.warn(`${req.headers.name} - missing state... reinit`);
                 state[req.headers.sessionid] = {
                     correctAnswers: 0,
@@ -399,48 +391,48 @@ function setupRequestHandler() {
             return;
         }
 
-        if(req.url == '/' || req.url == '') {
-            var filePath = path.join(__dirname, 'player.html');
-            var stat = fs.statSync(filePath);
+        if (req.url === '/' || req.url === '') {
+            const filePath = path.join(__dirname, 'player.html');
+            const stat = fs.statSync(filePath);
             res.writeHead(200, {
                 'Content-Type': 'text/html',
                 'Content-Length': stat.size
             });
-            var readStream = fs.createReadStream(filePath);
+            const readStream = fs.createReadStream(filePath);
             readStream.pipe(res);
             return;
         }
 
-        if(req.url == '/readonly') {
-            var filePath = path.join(__dirname, 'monitor.html');
-            var stat = fs.statSync(filePath);
+        if (req.url == '/readonly') {
+            const filePath = path.join(__dirname, 'monitor.html');
+            const stat = fs.statSync(filePath);
             res.writeHead(200, {
                 'Content-Type': 'text/html',
                 'Content-Length': stat.size
             });
-            var readStream = fs.createReadStream(filePath);
+            const readStream = fs.createReadStream(filePath);
             readStream.pipe(res);
             return;
         }
 
-        if(req.url.match(/\/(.+?\.png)$/)) {
-            var filePath = path.join(__dirname, RegExp.$1);
-            var stat = fs.statSync(filePath);
+        if (req.url.match(/\/(.+?\.png)$/)) {
+            const filePath = path.join(__dirname, RegExp.$1);
+            const stat = fs.statSync(filePath);
             res.writeHead(200, {
                 'Content-Type': 'image/png',
                 'Content-Length': stat.size
             });
-            var readStream = fs.createReadStream(filePath);
+            const readStream = fs.createReadStream(filePath);
             readStream.pipe(res);
             return;
         }
 
-        if(req.url == '/status') {
+        if (req.url === '/status') {
             hangingRequests.push(res);
             return;
         }
 
-        if(req.url == '/status/nowait') {
+        if (req.url === '/status/nowait') {
             res.end(JSON.stringify({
                 scores: getStats(true),
                 round: questionCounter,
@@ -449,7 +441,7 @@ function setupRequestHandler() {
             return;
         }
 
-        res.writeHead(404, {"Content-Type": "text/plain"});
+        res.writeHead(404, { "Content-Type": "text/plain" });
         res.write("404 Not Found\n");
         res.end();
     }
@@ -457,7 +449,7 @@ function setupRequestHandler() {
 
 function setupTelnet(port) {
     const server = net.createServer(function(socket) {
-        var logging_name = socket.logging_name = socket.remoteAddress;
+        const logging_name = socket.logging_name = socket.remoteAddress;
 
         // Setup logging on socket object
         ['info', 'warn', 'error', 'verbose'].forEach(level => {
@@ -466,11 +458,11 @@ function setupTelnet(port) {
 
         // Easy writing to socket
         socket.send = function(msg, interpolate) {
-            if(!socket.writable) {
+            if (!socket.writable) {
                 return;
             }
 
-            if(interpolate !== undefined) {
+            if (interpolate !== undefined) {
                 socket.write(util.format(msg, interpolate).bold + '\r\n');
             } else {
                 socket.write(msg.bold + '\r\n');
@@ -479,13 +471,13 @@ function setupTelnet(port) {
 
         socket.info('connected');
 
-        socket.send(''); socket.send('');
+        socket.send('');
+        socket.send('');
         socket.send('Welcome to the Cloudbeds Quiz 2020');
         socket.send('=================================='.rainbow);
         socket.send('');
 
-
-        if(!state[socket.remoteAddress]) {
+        if (!state[socket.remoteAddress]) {
             state[socket.remoteAddress] = {};
             state[socket.remoteAddress].correctAnswers = 0;
             state[socket.remoteAddress].incorrectAnswers = 0;
@@ -494,16 +486,15 @@ function setupTelnet(port) {
         state[socket.remoteAddress].socket = socket;
         state[socket.remoteAddress].telnet = true;
 
-        if(state[socket.remoteAddress].player_name) {
+        if (state[socket.remoteAddress].player_name) {
             save_name(socket, state[socket.remoteAddress], state[socket.remoteAddress].player_name);
-        }
-        else {
+        } else {
             socket.send('Enter your player name (change later with "change_name"):');
         }
 
         socket.on('data', function(data) {
             data = data.toString().replace(/[\n\r]/g, '');
-            if(data === '')
+            if (data === '')
                 return;
 
             socket.verbose('data: %s', data);
@@ -512,14 +503,14 @@ function setupTelnet(port) {
         });
 
         socket.on('error', function(err) {
-            if(socket && socket.error)
+            if (socket && socket.error)
                 socket.error('error: %s', err);
             else
                 logger.error(`${logging_name} %s`, err);
         });
 
         socket.on('close', function() {
-            if(socket && socket.warning)
+            if (socket && socket.warning)
                 socket.warning('disconnected');
             else
                 logger.warn(`${logging_name} disconnected`);
@@ -536,7 +527,7 @@ function setupTelnet(port) {
 }
 
 function loadQuestions() {
-    const csvFilePath = process.argv[2] || 'questions1.csv';
+    const csvFilePath = process.argv[2] || 'questions.csv';
 
     csv()
         .fromFile(csvFilePath)
@@ -546,12 +537,12 @@ function loadQuestions() {
 }
 
 function evaluateAnswer(players, playerId, question) {
-    if(!question['Special Flag']) {
-        if(!players[playerId].answer) {
+    if (!question['Special Flag']) {
+        if (!players[playerId].answer) {
             return { correctAnswer: question['Correct Answer'], answeredCorrectly: false };
         }
 
-        if(players[playerId].answer === question['Correct Answer']) {
+        if (players[playerId].answer === question['Correct Answer']) {
             return { correctAnswer: question['Correct Answer'], answeredCorrectly: true };
         } else {
             return { correctAnswer: question['Correct Answer'], answeredCorrectly: false };
@@ -559,10 +550,10 @@ function evaluateAnswer(players, playerId, question) {
     }
 
     // Answer selected fewest times
-    if(question['Special Flag'] == 1) {
-        let answerCount = [999, 0,0,0,0];
-        for(let countPlayer in players) {
-            if(!players[countPlayer].answer) {
+    if (question['Special Flag'] === 1) {
+        let answerCount = [999, 0, 0, 0, 0];
+        for (let countPlayer in players) {
+            if (!players[countPlayer].answer) {
                 continue;
             }
 
@@ -570,9 +561,9 @@ function evaluateAnswer(players, playerId, question) {
         }
 
         let highestCount = Math.min(...answerCount);
-        for(let i = 1; i <= 4; i++) {
-            if(answerCount[i] == highestCount) {
-                if(players[playerId].answer === i) {
+        for (let i = 1; i <= 4; i++) {
+            if (answerCount[i] === highestCount) {
+                if (players[playerId].answer === i) {
                     return { correctAnswer: i, answeredCorrectly: true };
                 }
             }
@@ -581,52 +572,52 @@ function evaluateAnswer(players, playerId, question) {
         return { correctAnswer: answerCount.indexOf(highestCount), answeredCorrectly: false };
     }
     // The fastest to choose
-    else if(question['Special Flag'] == 2) {
+    else if (question['Special Flag'] === 2) {
         let fastestTime = new Date().getTime();
         let fastestPlayer = undefined;
 
-        for(let countPlayer in players) {
-            if(!players[countPlayer].answeredAt) {
+        for (let countPlayer in players) {
+            if (!players[countPlayer].answeredAt) {
                 continue;
             }
 
-            if(players[countPlayer].answer != 3) {
+            if (players[countPlayer].answer !== 3) {
                 continue;
             }
 
-            if(players[countPlayer].answeredAt.getTime() < fastestTime) {
+            if (players[countPlayer].answeredAt.getTime() < fastestTime) {
                 fastestTime = players[countPlayer].answeredAt.getTime();
                 fastestPlayer = countPlayer;
             }
         }
 
-        if(fastestPlayer === playerId) {
+        if (fastestPlayer === playerId) {
             return { correctAnswer: 3, answeredCorrectly: true };
         } else {
             return { correctAnswer: 3, answeredCorrectly: false };
         }
     }
     // The last to choose
-    else if(question['Special Flag'] == 3) {
+    else if (question['Special Flag'] === 3) {
         let latestTime = 0;
         let latestPlayer = undefined;
 
-        for(let countPlayer in players) {
-            if(!players[countPlayer].answeredAt) {
+        for (let countPlayer in players) {
+            if (!players[countPlayer].answeredAt) {
                 continue;
             }
 
-            if(players[countPlayer].answer != 1) {
+            if (players[countPlayer].answer !== 1) {
                 continue;
             }
 
-            if(players[countPlayer].answeredAt.getTime() > latestTime) {
+            if (players[countPlayer].answeredAt.getTime() > latestTime) {
                 latestTime = players[countPlayer].answeredAt.getTime();
                 latestPlayer = countPlayer;
             }
         }
 
-        if(latestPlayer === playerId) {
+        if (latestPlayer === playerId) {
             return { correctAnswer: 1, answeredCorrectly: true };
         } else {
             return { correctAnswer: 1, answeredCorrectly: false };
@@ -640,11 +631,11 @@ function evaluateAnswer(players, playerId, question) {
 }
 
 function setAnswer(player, answer) {
-    if(!player.answer) {
+    if (!player.answer) {
         logger.debug(`${player.player_name} sets answer to ${answer}`);
-        if(questions[questionCounter]['Special Flag'] == 2 && answer == 3) {
+        if (questions[questionCounter]['Special Flag'] === 2 && answer === 3) {
             player.answeredAt = new Date();
-        } else if(questions[questionCounter]['Special Flag'] != 2) {
+        } else if (questions[questionCounter]['Special Flag'] !== 2) {
             player.answeredAt = new Date();
         }
     } else {
