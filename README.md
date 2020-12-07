@@ -36,3 +36,6 @@ Admin commands are accepted via command line at run time. Commands:
 * `debug off`: turn of debug level logging
 * `debug state`: outputs information about connected clients
 
+To not participate and to share questions/results on screen go to
+`http://localhost:3300/readonly`. This uses this `monitor.html` file, whereas
+participating players use `player.html`.
