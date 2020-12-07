@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8">
+    <title>Cloudbeds Quiz</title>
+  <style type="text/css">
+    html, body {
+        background-color: black;
+        color: white;
+        font-family: Arial, sans-serif;
+    }
+    .playfield {
+        position: fixed;
+        bottom: 0;
+        width: 100%;
+        padding-bottom: 40px;
+    }
+    .question {
+      font-size: 2.3vw;
+      position: absolute;
+      left: 20%;
+      top: 5%;
+      width: 62%;
+    }
+    .answer {
+      font-size: 2.1vw;
+      position: absolute;
+      left: 22%;
+      top: 45%;
+      width: 27%;
+      z-index: 2;
+    }
+    .answer2 {
+      left: 56%;
+      top: 45%;
+    }
+    .answer3 {
+      left: 22%;
+      top: 69.5%;
+    }
+    .answer4 {
+      left: 56%;
+      top: 69.5%;
+    }
+    .correct {
+      display: none;
+      position: absolute;
+      z-index: 1;
+      left: 16.5%;
+      top: 39.2%;
+    }
+    .correct img {
+      width: 93%;
+    }
+    .correct2 {
+      left: 49.9%;
+      top: 39.2%;
+    }
+    .correct3 {
+      left: 16.5%;
+      top: 63.7%;
+    }
+    .correct4 {
+      left: 49.9%;
+      top: 63.7%;
+    }
+    .leaderboard {
+      padding-left: 20px;
+    }
+    .round {
+      font-size: 30px;
+      position: absolute;
+      right: 20px;
+      top: 20px;
+    }
+    .countdown {
+      font-size: 60px;
+      position: absolute;
+      right: 20px;
+      top: 120px;
+      color: #f7bc15;
+    }
+    .answerboard {
+      position: absolute;
+      left:40% ;
+      top: 00px;
+      display: none;
+    }
+
+    .leaders {
+      font-size: 20px;
+    }
+    .leaders th {
+      padding-right: 20px;
+    }
+    .leaders td {
+      padding-right: 20px;
+    }
+
+    .answers table {
+        border-collapse: collapse;
+    }
+
+    .answers td.is-correct {
+      background-color: #94d20c;
+      color: black;
+      padding: 3px;
+    }
+    .answers td.is-wrong {
+      background-color: #ff5816;
+      color: black;
+      padding: 3px;
+    }
+
+    .answers .player-answer {
+        border-right: 3px solid black;
+    }
+
+    .join {
+      font-size: 14px;
+      color: fuchsia;
+      padding-top: 10px;
+    }
+  </style>
+  </head>
+  <body>
+    <div class="leaderboard">
+      <h1>Leaderboard</h1>
+      <div class="leaders"></div>
+    </div>
+    <div class="answerboard">
+      <h1>Answers</h1>
+      <div class="answers"></div>
+    </div>
+    <div class="round">Not started yet
+      <br />
+      <br />
+      To join:
+      <br />
+      <pre>telnet carapeto.pt 1337</pre>
+      <pre>http://quiz.carapeto.pt (-1 point)</pre>
+    </div>
+    <div class="countdown">
+    </div>
+
+    <div class="playfield">
+      <div class="correct correct1"><img src="correct.png" /></div>
+      <div class="correct correct2"><img src="correct.png" /></div>
+      <div class="correct correct3"><img src="correct.png" /></div>
+      <div class="correct correct4"><img src="correct.png" /></div>
+      <div class="question"></div>
+      <div class="answer answer1"></div>
+      <div class="answer answer2"></div>
+      <div class="answer answer3"></div>
+      <div class="answer answer4"></div>
+      <img src="boxes.png" style="width: 100%">
+    </div>
+  
+  <script type="text/javascript">
+    let run = 0;
+    let countdownTimer;
+    let countdown;
+    const PLAYER_ROWS = 3;
+    const MAX_LEADERS = 10;
+
+    function autorun() {
+        let urlPostfix = '/start';
+        if (run) {
+            urlPostfix = '/status';
+        }
+        run++;
+        const request = new Request('http://quiz.carapeto.pt' + urlPostfix, {
+            method: 'POST'
+        });
+        fetch(request)
+            .then(response => {
+                if (response.status === 200) {
+                    return response.json();
+                } else {
+                    throw new Error('Something went wrong on api server!');
+                }
+            })
+            .then(response => {
+                console.log('incoming', response);
+                if (response.round !== undefined && response.started) {
+                    document.querySelector('.round').innerHTML = `
+                      Question ${response.round}
+                      <div class="join">You can still join:<br />
+                      telnet carapeto.pt 1337<br />
+                      http://quiz.carapeto.pt (-1 point)
+                      </div>`;
+                }
+                if (response.scores) {
+                    let tableHTML = '<table><thead><tr><th>Rank</th><th>Player</th><th>Correct</th><th>Wrong</th></tr></thead><tbody>';
+                    let counter = 0;
+                    response.scores.forEach(function(player) {
+                        if(++counter > MAX_LEADERS && player.name != name) {
+                            return;
+                        }
+                        tableHTML += `
+                            <tr>
+                            <td class="rank">${player.rank}.</td>
+                            <td class="name">${player.name}</td>
+                            <td class="qcorrect">${player.correct}</td>
+                            <td class="qwrong">${player.wrong}</td>
+                            </tr>
+                        `;
+                    });
+                    tableHTML += `</tbody></table>`;
+                    document.querySelector('.leaders').innerHTML = tableHTML;
+                }
+                if (response.question) {
+                    document.querySelector('.answerboard').style.display = 'none';
+                    document.querySelector('.answers').innerHTML = '';
+
+                    document.querySelectorAll('.correct').forEach(function(item) {
+                        item.style.display = 'none';
+                    });
+
+                    document.querySelector('.question').textContent = response.question.Question;
+                    [1,2,3,4].forEach(i => {
+                        let answerContainer = document.querySelector(`.answer${i}`);
+                        let answer = response.question[`Answer ${i}`]
+                        if(answer.length <= 12) { answerContainer.style.fontSize = '2.5vw'; }
+                        else if(answer.length <= 15) { answerContainer.style.fontSize = '2.2vw'; }
+                        else if(answer.length <= 20) { answerContainer.style.fontSize = '1.7vw'; }
+                        else if(answer.length <= 25) { answerContainer.style.fontSize = '1.4vw'; }
+                        else if(answer.length <= 50) { answerContainer.style.fontSize = '1.2vw'; }
+                        else if(answer.length <= 70) { answerContainer.style.fontSize = '1.0vw'; }
+                        else { answerContainer.style.fontSize = '0.9vw'; }
+                        answerContainer.textContent = answer;
+                    });
+                }
+                if (response.correct) {
+                    document.querySelector('.correct' + response.correct).style.display = 'block';
+                }
+                if (response.lastanswers) {
+                    document.querySelector('.answerboard').style.display = 'block';
+                    let tableHTML = '<table><thead><tr><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th></tr></thead><tbody>';
+                    let resultCounter = 0;
+                    response.lastanswers.forEach(function(player) {
+                        if (resultCounter % PLAYER_ROWS == 0) {
+                            tableHTML += `
+    <tr>
+    `;
+                        }
+                        tableHTML += `
+    <td class="${player.is_correct ? 'is-correct' : 'is-wrong'}">${player.name}</td>
+    <td class="player-answer ${player.is_correct ? 'is-correct' : 'is-wrong'}">${player.answer}</td>
+    `;
+                        resultCounter++;
+                        if (resultCounter % PLAYER_ROWS == 0) {
+                            tableHTML += `</tr>`;
+                        }
+                    });
+                    if (resultCounter % PLAYER_ROWS != 0) {
+                        tableHTML += `</tr>`;
+                    }
+                    tableHTML += `</tbody></table>`;
+                    document.querySelector('.answers').innerHTML = tableHTML;
+                }
+                if (response.timeleft) {
+                    if (countdownTimer) {
+                        clearTimeout(countdownTimer);
+                    }
+                    countdown = response.timeleft;
+                    countdownTimer = setInterval(updateCountdown, 1000);
+                    updateCountdown();
+                }
+                setTimeout(function() {
+                    autorun(1)
+                }, 10);
+            }).catch(error => {
+                setTimeout(function() {
+                    autorun(1)
+                }, 1000);
+            });
+    }
+
+    function updateCountdown() {
+        if (!countdown) {
+            clearTimeout(countdownTimer);
+            document.querySelector('.countdown').style.display = 'none';
+            return;
+        }
+
+        document.querySelector('.countdown').style.display = 'block';
+        document.querySelector('.countdown').textContent = countdown;
+        countdown--;
+    }
+    if (document.addEventListener) document.addEventListener("DOMContentLoaded", autorun, false);
+    else if (document.attachEvent) document.attachEvent("onreadystatechange", autorun);
+    else window.onload = autorun;
+  </script>
+  </body>
+</html>
