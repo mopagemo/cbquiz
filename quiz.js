@@ -10,6 +10,9 @@ const readline = require('readline');
 const net = require('net');
 const util = require('util');
 const winston = require('winston');
+const argv = require('minimist')(process.argv.slice(2));
+
+const csvFilePath = argv._[0] || 'questions.csv';
 
 const {
     createLogger,
@@ -29,6 +32,15 @@ const logger = createLogger({
     ),
     transports: [new transports.Console()]
 });
+
+if (!fs.existsSync(csvFilePath)) {
+    logger.error(`
+        CSV file with Questions was not found.
+        Make sure it exists and you write it correctly, e.g.:
+            ./quiz.js questions5.csv --port 9000
+    `)
+    process.exit();
+}
 
 const rl = readline.createInterface({
     input: process.stdin,
@@ -51,8 +63,8 @@ let state = {};
 let hangingRequests = [];
 
 loadQuestions();
-setupHTTP(3300, setupRequestHandler());
-setupTelnet(1337);
+setupHTTP(argv.port || 3300, setupRequestHandler());
+setupTelnet(argv['telnet-port'] || 1337);
 
 function handleInput(socket, state, input) {
     if (!state.has_name) {
@@ -527,8 +539,6 @@ function setupTelnet(port) {
 }
 
 function loadQuestions() {
-    const csvFilePath = process.argv[2] || 'questions.csv';
-
     csv()
         .fromFile(csvFilePath)
         .then((jsonObj) => {
