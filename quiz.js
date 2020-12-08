@@ -2,6 +2,7 @@
 
 /* jshint esversion: 6 */
 
+require('colors');
 const csv = require('csvtojson');
 const fs = require('fs');
 const http = require('http');
@@ -666,5 +667,3 @@ function setupHTTP(port, requestHandler) {
         logger.info(`web server is listening on ${port} - http://localhost:${port}`);
     });
 }
-
-
