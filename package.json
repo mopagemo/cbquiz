@@ -1,12 +1,16 @@
 {
-  "name": "quiz",
-  "version": "1.0.0",
-  "description": "",
-  "main": "quiz.js",
-  "author": "Mo Dulies",
-  "dependencies": {
-    "colors": "^1.4.0",
-    "csvtojson": "^2.0.10",
-    "winston": "^3.3.3"
-  }
+    "name": "quiz",
+    "version": "1.0.0",
+    "description": "",
+    "main": "quiz.js",
+    "author": "Mo Dulies",
+    "scripts": {
+        "start": "node ./quiz.js"
+    },
+    "dependencies": {
+        "colors": "^1.4.0",
+        "csvtojson": "^2.0.10",
+        "minimist": "^1.2.5",
+        "winston": "^3.3.3"
+    }
 }

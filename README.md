@@ -13,7 +13,14 @@ server. Can be used via web browser or telnet/netcat.
 
 `npm install`
 
-Then start with `./quiz.js questions.csv`. `questions.csv` needs to look like this:
+Then start with `./quiz.js my-questions.csv`.
+Alternatively start by executing `./quiz.js` or `npm start` which will use `questions.csv` file.
+Custom ports can be specified with the `port` and `telnet-port` flags, e.g.
+```
+./quiz.js --port 9000 --telnet-port 3333
+```
+
+`questions.csv` needs to look like this:
 
 ```
 Question,Answer 1,Answer 2,Answer 3,Answer 4,Difficulty (1-5 stars),Correct Answer
