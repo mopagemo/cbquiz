@@ -4,3 +4,5 @@ node_modules/
 # Don't commit question files
 question*.csv
 
+# Don't commit internal update script
+update-remote.sh
