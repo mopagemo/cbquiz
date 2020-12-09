@@ -49,6 +49,8 @@ const QuizCommands = {
     SetTimeRegex: /^(?:t|time) ?(\d+)$/,
     SetQuestionRegex: /^q ?(\d+)$/,
 
+    KickRegex: /^kick (.+) *$/,
+
     Stats: ['board', 'stats'],
     WebStats: ['webboard', 'webstats'],
 
@@ -89,6 +91,11 @@ function processAdmin(input) {
     if (QuizCommands.SetTimeRegex.test(input)) {
         QUESTION_TIME = parseInt(RegExp.$1);
         logger.info('setting timeout to ' + QUESTION_TIME);
+        return;
+    }
+
+    if (QuizCommands.KickRegex.test(input)) {
+        kick(players, RegExp.$1);
         return;
     }
 
@@ -135,9 +142,11 @@ function showQuestion(questionIndex) {
     let questionCopy = JSON.parse(JSON.stringify(questions[questionIndex]));
     delete questionCopy['Correct Answer'];
 
+    let telnetFormattedQuestion = questions[questionIndex].Question.replace(/<\/?.+?>/g, '');
+
     sendToTelnetPlayers('');
     sendToTelnetPlayers(`Question ${questionIndex + 1}:`.underline.brightYellow);
-    sendToTelnetPlayers(questions[questionIndex].Question);
+    sendToTelnetPlayers(telnetFormattedQuestion);
     sendToTelnetPlayers(`1) ${questions[questionIndex]['Answer 1']}`);
     sendToTelnetPlayers(`2) ${questions[questionIndex]['Answer 2']}`);
     sendToTelnetPlayers(`3) ${questions[questionIndex]['Answer 3']}`);
@@ -425,4 +434,33 @@ function evaluateAnswer(players, playerId, question) {
         logger.error('Invalid special flag');
         return { correctAnswer: 1, answeredCorrectly: true };
     }
+}
+
+function kick(players, playerId) {
+    let player = players[playerId];
+    if (!player) {
+        let matchingPlayers = Object.values(players).filter((obj) => {
+            return obj.playerName == playerId;
+        });
+        if (matchingPlayers.length) {
+            player = matchingPlayers[0];
+        }
+    }
+
+    if (!player) {
+        logger.error('No such player');
+        return;
+    }
+
+    if (player.socket) {
+        logger.debug('Ending socket');
+        try {
+            player.socket.destroy();
+        } catch (err) {
+            logger.error('Could not destroy socket');
+        }
+    }
+
+    delete players[playerId];
+    logger.info('Player kicked');
 }
