@@ -40,7 +40,7 @@ Admin commands are accepted via command line at run time. Commands:
 -   `next` or `n`: go to next question
 -   `board` or `stats`: update/display leaderboard to all clients (debugging use mostly)
 -   `webboard` or `webstats`: update leaderboard to all HTTP clients (debugging use mostly)
--   `time 10`: change question timeout to 10 seconds
+-   `time 10` or `t 10`: change question timeout to 10 seconds
 -   `debug` or `debug on`: turn on debug level logging
 -   `debug off`: turn of debug level logging
 -   `debug state`: outputs information about connected clients

@@ -1,0 +1,118 @@
+html,
+body {
+    background-color: black;
+    color: white;
+    font-family: Arial, sans-serif;
+}
+.playfield {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    padding-bottom: 40px;
+}
+.question {
+    font-size: 2.3vw;
+    position: absolute;
+    left: 20%;
+    top: 5%;
+    width: 62%;
+}
+.answer {
+    font-size: 2.1vw;
+    position: absolute;
+    left: 22%;
+    top: 45%;
+    width: 27%;
+    z-index: 2;
+}
+.answer2 {
+    left: 56%;
+    top: 45%;
+}
+.answer3 {
+    left: 22%;
+    top: 69.5%;
+}
+.answer4 {
+    left: 56%;
+    top: 69.5%;
+}
+.correct {
+    display: none;
+    position: absolute;
+    z-index: 1;
+    left: 16.5%;
+    top: 39.2%;
+}
+.correct img {
+    width: 93%;
+}
+.correct2 {
+    left: 49.9%;
+    top: 39.2%;
+}
+.correct3 {
+    left: 16.5%;
+    top: 63.7%;
+}
+.correct4 {
+    left: 49.9%;
+    top: 63.7%;
+}
+.leaderboard {
+    padding-left: 20px;
+}
+.round {
+    font-size: 30px;
+    position: absolute;
+    right: 20px;
+    top: 20px;
+}
+.countdown {
+    font-size: 60px;
+    position: absolute;
+    right: 20px;
+    top: 120px;
+    color: #f7bc15;
+}
+.answerboard {
+    position: absolute;
+    left: 40%;
+    top: 00px;
+    display: none;
+}
+
+.leaders {
+    font-size: 20px;
+}
+.leaders th {
+    padding-right: 20px;
+}
+.leaders td {
+    padding-right: 20px;
+}
+
+.answers table {
+    border-collapse: collapse;
+}
+
+.answers td.is-correct {
+    background-color: #94d20c;
+    color: black;
+    padding: 3px;
+}
+.answers td.is-wrong {
+    background-color: #ff5816;
+    color: black;
+    padding: 3px;
+}
+
+.answers .player-answer {
+    border-right: 3px solid black;
+}
+
+.join {
+    font-size: 14px;
+    color: fuchsia;
+    padding-top: 10px;
+}
