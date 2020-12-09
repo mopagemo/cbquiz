@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Cloudbeds Quiz</title>
+        <link rel="stylesheet" href="player.css" />
+    </head>
+    <body>
+        <div class="leaderboard">
+            <h1>Leaderboard</h1>
+            <div class="leaders"></div>
+        </div>
+        <div class="answerboard">
+            <h1>Answers</h1>
+            <div class="answers"></div>
+        </div>
+        <div class="round">Not started yet</div>
+        <div class="countdown"></div>
+
+        <div class="name-entry">
+            <h2>Welcome to the (inofficial) Cloudbeds Quiz!</h2>
+            <input type="text" class="player-name" placeholder="Please enter your player name" />
+            <button class="set-name">GO</button>
+        </div>
+
+        <div class="playfield">
+            <div class="correct correct1"><img src="correct.png" /></div>
+            <div class="correct correct2"><img src="correct.png" /></div>
+            <div class="correct correct3"><img src="correct.png" /></div>
+            <div class="correct correct4"><img src="correct.png" /></div>
+            <div class="locked locked1"><img src="locked.png" /></div>
+            <div class="locked locked2"><img src="locked.png" /></div>
+            <div class="locked locked3"><img src="locked.png" /></div>
+            <div class="locked locked4"><img src="locked.png" /></div>
+            <div class="question"></div>
+            <div class="answer answer1"></div>
+            <div class="answer answer2"></div>
+            <div class="answer answer3"></div>
+            <div class="answer answer4"></div>
+            <img src="boxes.png" style="width: 100%" />
+        </div>
+
+        <script src="globals.js"></script>
+        <script src="player.js"></script>
+    </body>
+</html>

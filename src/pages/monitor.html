@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8" />
+        <title>Cloudbeds Quiz</title>
+        <link rel="stylesheet" href="monitor.css" />
+    </head>
+    <body>
+        <div class="leaderboard">
+            <h1>Leaderboard</h1>
+            <div class="leaders"></div>
+        </div>
+        <div class="answerboard">
+            <h1>Answers</h1>
+            <div class="answers"></div>
+        </div>
+        <div class="round">
+            Not started yet
+            <br />
+            <br />
+            To join:
+            <br />
+            <pre>telnet carapeto.pt 1337</pre>
+            <pre>http://quiz.carapeto.pt (-1 point)</pre>
+        </div>
+        <div class="countdown"></div>
+
+        <div class="playfield">
+            <div class="correct correct1"><img src="correct.png" /></div>
+            <div class="correct correct2"><img src="correct.png" /></div>
+            <div class="correct correct3"><img src="correct.png" /></div>
+            <div class="correct correct4"><img src="correct.png" /></div>
+            <div class="question"></div>
+            <div class="answer answer1"></div>
+            <div class="answer answer2"></div>
+            <div class="answer answer3"></div>
+            <div class="answer answer4"></div>
+            <img src="boxes.png" style="width: 100%" />
+        </div>
+
+        <script src="globals.js"></script>
+        <script src="monitor.js"></script>
+    </body>
+</html>

@@ -3,149 +3,124 @@
 /* jshint esversion: 6 */
 
 require('colors');
-const csv = require('csvtojson');
-const fs = require('fs');
-const http = require('http');
-const path = require('path');
-const readline = require('readline');
-const net = require('net');
-const util = require('util');
-const winston = require('winston');
 const argv = require('minimist')(process.argv.slice(2));
+const fs = require('fs');
+const readline = require('readline');
+
+const logger = require('./src/logger');
+const { loadQuestions, questions } = require('./src/questions');
+const setupHTTP = require('./src/setupHTTP');
+const setupTelnet = require('./src/setupTelnet');
 
 const csvFilePath = argv._[0] || 'questions.csv';
-
-const {
-    createLogger,
-    format,
-    transports
-} = winston;
-
-const logger = createLogger({
-    level: 'info',
-    format: format.combine(
-        format.splat(),
-        format.colorize(),
-        format.timestamp({
-            format: 'YYYY-MM-DD HH:mm:ss'
-        }),
-        format.printf(info => `${info.timestamp} ${info.level}: ${info.message}`)
-    ),
-    transports: [new transports.Console()]
-});
-
 if (!fs.existsSync(csvFilePath)) {
     logger.error(`
         CSV file with Questions was not found.
         Make sure it exists and you write it correctly, e.g.:
             ./quiz.js questions5.csv --port 9000
-    `)
+    `);
     process.exit();
 }
 
-const rl = readline.createInterface({
-    input: process.stdin,
-});
+const rl = readline.createInterface({ input: process.stdin });
 rl.on('line', (input) => {
     processAdmin(input);
 });
 
-let gameStarted = false;
-let questionShowing = false;
-let questionTimer;
-
-let questions;
-let questionCounter = -1;
+const game = {
+    started: false,
+    hangingRequests: [],
+    questionCounter: -1,
+    questionShowing: false,
+    showStats,
+};
+const players = {};
 
 let QUESTION_TIME = 15;
+let questionTimer;
 
-let state = {};
+loadQuestions(csvFilePath);
+setupHTTP(argv.port || 3300, game, players);
+setupTelnet(argv['telnet-port'] || 1337, game, players);
 
-let hangingRequests = [];
+const QuizCommands = {
+    Start: ['start'],
+    Next: ['next', 'n'],
+    SetTimeRegex: /^(?:t|time) ?(\d+)$/,
+    SetQuestionRegex: /^q ?(\d+)$/,
 
-loadQuestions();
-setupHTTP(argv.port || 3300, setupRequestHandler());
-setupTelnet(argv['telnet-port'] || 1337);
+    KickRegex: /^kick (.+) *$/,
 
-function handleInput(socket, state, input) {
-    if (!state.has_name) {
-        socket.info(`name set to ${input}`);
-        return save_name(socket, state, input);
-    }
+    Stats: ['board', 'stats'],
+    WebStats: ['webboard', 'webstats'],
 
-    if (input === 'change_name') {
-        socket.send('Enter a new name:');
-        state.has_name = false;
-        return;
-    }
-
-    if (!gameStarted) {
-        socket.send('Chill out mate, we have not started yet'.red);
-        return;
-    }
-
-    if (!input.match(/^\d$/) || input > 4 || input < 1) {
-        socket.send('Invalid answer. Choose 1-4.'.red);
-        return;
-    }
-
-    if (questionShowing) {
-        if (!state.answer || state.answer === input) {
-            socket.send(`Selected answer: ${input}`);
-            state.answeredAt = new Date();
-        } else {
-            socket.send(`Changed answer from ${state.answer} to ${input}`);
-        }
-        state.answer = input;
-    } else {
-        socket.send('Too late :('.red)
-    }
-}
-
-function save_name(socket, state, input) {
-    input = input.replace(/[^a-zA-Z]/g, '');
-    if (!input) {
-        socket.send('Invalid name. Try again.'.red);
-        return
-    }
-    state.player_name = input;
-    state.has_name = true;
-    socket.logging_name = input;
-    socket.player = input;
-    socket.send('Name set to: %s. Please stand by...', input);
-    showStats(true);
-}
+    DebugOn: ['debug', 'debug on'],
+    DebugOff: ['debug off'],
+    DebugState: ['debug state'],
+};
 
 function processAdmin(input) {
-    if (input === 'start') {
-        questionCounter = 0;
+    if (QuizCommands.Start.includes(input)) {
+        game.questionCounter = 0;
         showQuestion(0);
-    } else if (input.match(/q ?(\d+)/)) {
-        questionCounter = parseInt(RegExp.$1);
-        showQuestion(questionCounter);
-    } else if (input === 'next' || input === 'n') {
-        questionCounter++;
-        showQuestion(questionCounter);
-    } else if (input === 'board' || input === 'stats') {
+        return;
+    }
+
+    if (QuizCommands.SetQuestionRegex.test(input)) {
+        game.questionCounter = parseInt(RegExp.$1);
+        showQuestion(game.questionCounter);
+        return;
+    }
+
+    if (QuizCommands.Next.includes(input)) {
+        game.questionCounter++;
+        showQuestion(game.questionCounter);
+        return;
+    }
+
+    if (QuizCommands.Stats.includes(input)) {
         showStats();
-    } else if (input === 'webboard' || input === 'webstats') {
+        return;
+    }
+
+    if (QuizCommands.WebStats.includes(input)) {
         showStats(true);
-    } else if (input.match(/^time ?(\d+)$/)) {
+        return;
+    }
+
+    if (QuizCommands.SetTimeRegex.test(input)) {
         QUESTION_TIME = parseInt(RegExp.$1);
         logger.info('setting timeout to ' + QUESTION_TIME);
-    } else if (input === 'debug' || input === 'debug on') {
+        return;
+    }
+
+    if (QuizCommands.KickRegex.test(input)) {
+        kick(players, RegExp.$1);
+        return;
+    }
+
+    if (QuizCommands.DebugOn.includes(input)) {
         logger.level = 'debug';
         logger.debug('debug enabled');
-    } else if (input === 'debug off') {
+        return;
+    }
+
+    if (QuizCommands.DebugOff.includes(input)) {
         logger.level = 'info';
         logger.info('debug disabled');
-    } else if (input === 'debug state') {
-        for (let playerId in state) {
-            logger.info(`* ${playerId}: ${player_name} - ${state[playerId].telnet ? 'telnet' : 'web'}`);
-        }
-    } else {
-        logger.error('eh?');
+        return;
     }
+
+    if (QuizCommands.DebugState.includes(input)) {
+        for (let playerId in players) {
+            logger.info(
+                `* ${playerId}: ${players[playerId].playerName} - ${players[playerId].telnet ? 'telnet' : 'web'}`
+            );
+        }
+        return;
+    }
+
+    logger.error('eh?');
 }
 
 function showQuestion(questionIndex) {
@@ -155,11 +130,11 @@ function showQuestion(questionIndex) {
     }
 
     logger.info(`Showing question ${questionIndex + 1} / ${questions.length}`);
-    gameStarted = true;
-    questionShowing = true;
+    game.started = true;
+    game.questionShowing = true;
 
-    for (let playerAddress in state) {
-        let player = state[playerAddress];
+    for (let playerAddress in players) {
+        let player = players[playerAddress];
         player.answer = undefined;
         player.answeredAt = undefined;
     }
@@ -167,90 +142,114 @@ function showQuestion(questionIndex) {
     let questionCopy = JSON.parse(JSON.stringify(questions[questionIndex]));
     delete questionCopy['Correct Answer'];
 
+    let telnetFormattedQuestion = questions[questionIndex].Question.replace(/<\/?.+?>/g, '');
+
     sendToTelnetPlayers('');
     sendToTelnetPlayers(`Question ${questionIndex + 1}:`.underline.brightYellow);
-    sendToTelnetPlayers(questions[questionIndex].Question);
-    sendToTelnetPlayers('1) ' + questions[questionIndex]['Answer 1']);
-    sendToTelnetPlayers('2) ' + questions[questionIndex]['Answer 2']);
-    sendToTelnetPlayers('3) ' + questions[questionIndex]['Answer 3']);
-    sendToTelnetPlayers('4) ' + questions[questionIndex]['Answer 4']);
+    sendToTelnetPlayers(telnetFormattedQuestion);
+    sendToTelnetPlayers(`1) ${questions[questionIndex]['Answer 1']}`);
+    sendToTelnetPlayers(`2) ${questions[questionIndex]['Answer 2']}`);
+    sendToTelnetPlayers(`3) ${questions[questionIndex]['Answer 3']}`);
+    sendToTelnetPlayers(`4) ${questions[questionIndex]['Answer 4']}`);
 
-    hangingRequests.forEach(function(res) {
-        res.end(JSON.stringify({
-            round: questionIndex,
-            question: questions[questionIndex],
-            timeleft: QUESTION_TIME,
-            started: gameStarted
-        }));
+    game.hangingRequests.forEach(function (res) {
+        res.end(
+            JSON.stringify({
+                round: questionIndex,
+                question: questions[questionIndex],
+                timeleft: QUESTION_TIME,
+                started: game.started,
+            })
+        );
     });
-    hangingRequests = [];
+    game.hangingRequests = [];
 
     startTimer();
 }
 
 function sendToTelnetPlayers(text) {
-    for (let playerAddress in state) {
-        let player = state[playerAddress];
+    for (let playerAddress in players) {
+        let player = players[playerAddress];
         player.socket.send(text);
     }
 }
 
 function showResultAfterQuestion() {
-    questionShowing = false;
+    game.questionShowing = false;
 
     let answers = [];
-    if (!questions[questionCounter]) {
+    if (!questions[game.questionCounter]) {
         return;
     }
 
     let someCorrectAnswer;
 
-    for (let playerAddress in state) {
-        let player = state[playerAddress];
-        let { correctAnswer, answeredCorrectly } = evaluateAnswer(state, playerAddress, questions[questionCounter]);
-        logger.debug(`Player ${playerAddress} answered correctly: ${answeredCorrectly}. Correct answer: ${correctAnswer}`);
+    for (let playerAddress in players) {
+        let player = players[playerAddress];
+        let { correctAnswer, answeredCorrectly } = evaluateAnswer(
+            players,
+            playerAddress,
+            questions[game.questionCounter]
+        );
+        logger.debug(
+            `Player ${playerAddress} answered correctly: ${answeredCorrectly}. Correct answer: ${correctAnswer}`
+        );
 
         someCorrectAnswer = correctAnswer;
 
         if (answeredCorrectly === undefined) {
             player.incorrectAnswers++;
-            player.socket.send(`Oh noes, you didn't answer! The correct answer was ${correctAnswer}: ${questions[questionCounter]['Answer ' + correctAnswer]}`.red);
+            player.socket.send(
+                `Oh noes, you didn't answer! The correct answer was ${correctAnswer}: ${
+                    questions[game.questionCounter][`Answer ${correctAnswer}`]
+                }`.red
+            );
             answers.push({
-                name: player.player_name,
+                name: player.playerName,
                 answer: 'nada',
-                is_correct: false
+                is_correct: false,
             });
         } else if (answeredCorrectly) {
             player.correctAnswers++;
-            player.socket.send(`Correct! The answer was ${correctAnswer}: ${questions[questionCounter]['Answer ' + correctAnswer]}`.green);
+            player.socket.send(
+                `Correct! The answer was ${correctAnswer}: ${
+                    questions[game.questionCounter][`Answer ${correctAnswer}`]
+                }`.green
+            );
             answers.push({
-                name: player.player_name,
+                name: player.playerName,
                 answer: player.answer,
-                is_correct: true
+                is_correct: true,
             });
         } else {
             player.incorrectAnswers++;
-            player.socket.send(`WRRROONG! The correct answer was ${correctAnswer}: ${questions[questionCounter]['Answer ' + correctAnswer]}`.red);
+            player.socket.send(
+                `WRRROONG! The correct answer was ${correctAnswer}: ${
+                    questions[game.questionCounter][`Answer ${correctAnswer}`]
+                }`.red
+            );
             answers.push({
-                name: player.player_name,
+                name: player.playerName,
                 answer: player.answer,
-                is_correct: false
+                is_correct: false,
             });
         }
     }
 
-    hangingRequests.forEach(function(res) {
-        res.end(JSON.stringify({
-            correct: someCorrectAnswer,
-            lastanswers: answers
-        }));
+    game.hangingRequests.forEach(function (res) {
+        res.end(
+            JSON.stringify({
+                correct: someCorrectAnswer,
+                lastanswers: answers,
+            })
+        );
     });
-    hangingRequests = [];
+    game.hangingRequests = [];
 
     showStats(false, true);
 
-    if (questions[questionCounter + 1]) {
-        logger.info(`Next question: ${questions[questionCounter + 1].Question}`);
+    if (questions[game.questionCounter + 1]) {
+        logger.info(`Next question: ${questions[game.questionCounter + 1].Question}`);
     } else {
         logger.warn('That was the last question');
     }
@@ -264,8 +263,8 @@ function startTimer() {
     questionTimer = setTimeout(showResultAfterQuestion, QUESTION_TIME * 1000);
 }
 
-function getStats(onlyHttp) {
-    let topPlayers = Object.values(state).sort((player1, player2) => {
+game.getStats = function (onlyHttp) {
+    let topPlayers = Object.values(players).sort((player1, player2) => {
         if (player1.correctAnswers > player2.correctAnswers) {
             return -1;
         }
@@ -282,11 +281,12 @@ function getStats(onlyHttp) {
         return 0;
     });
 
+    const forWebsite = [];
     let rank;
     let prevPlayer;
-    let forWebsite = [];
-    topPlayers.forEach(function(player) {
-        if (player.player_name === undefined) {
+
+    topPlayers.forEach(function (player) {
+        if (player.playerName === undefined) {
             return;
         }
 
@@ -297,20 +297,24 @@ function getStats(onlyHttp) {
         }
 
         if (!onlyHttp) {
-            sendToTelnetPlayers(`${rank}. ${player.player_name}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`);
-            console.log(`${rank}. ${player.player_name}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`);
+            sendToTelnetPlayers(
+                `${rank}. ${player.playerName}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`
+            );
+            console.log(
+                `${rank}. ${player.playerName}: ${player.correctAnswers} correct, ${player.incorrectAnswers} wrong`
+            );
         }
 
         forWebsite.push({
             rank: rank,
-            name: player.player_name,
+            name: player.playerName,
             correct: player.correctAnswers,
-            wrong: player.incorrectAnswers
+            wrong: player.incorrectAnswers,
         });
         prevPlayer = player;
     });
     return forWebsite;
-}
+};
 
 function showStats(onlyHttp, withDelay) {
     if (!onlyHttp) {
@@ -319,232 +323,25 @@ function showStats(onlyHttp, withDelay) {
         console.log('Leaderboard'.underline.blue);
     }
 
-    let forWebsite = getStats(onlyHttp);
+    const forWebsite = game.getStats(onlyHttp);
 
     if (!onlyHttp) {
         sendToTelnetPlayers('');
     }
 
-    setTimeout(function() {
-        hangingRequests.forEach(function(res) {
-            res.end(JSON.stringify({
-                scores: forWebsite
-            }));
-        });
-        hangingRequests = [];
-    }, withDelay ? 500 : 0);
-}
-
-function setupRequestHandler() {
-    return (req, res) => {
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
-        res.setHeader('Access-Control-Allow-Headers', 'X-Requested-With,content-type,name,sessionId');
-        res.setHeader('Access-Control-Allow-Credentials', true);
-        res.setHeader('Content-Type', 'application/json');
-
-        logger.debug(`${req.headers.name} - ${req.method} ${req.url}`);
-
-        if (req.method === 'OPTIONS') {
-            res.end();
-            return;
-        }
-
-        if (req.url === '/register-name') {
-            if (!req.headers.sessionid || !req.headers.name) {
-                res.end(JSON.stringify({
-                    success: false
-                }));
-                return;
-            }
-
-            state[req.headers.sessionid] = {
-                correctAnswers: -1,
-                incorrectAnswers: 0,
-                player_name: req.headers.name,
-                socket: { send: function() {} }
-            };
-            res.end(JSON.stringify({
-                success: true
-            }));
-
-            logger.info(`${req.headers.name} - connected`);
-
-            return;
-        }
-
-        if (req.url === '/start') {
-            res.end(JSON.stringify({
-                round: questionCounter,
-                started: gameStarted
-            }));
-            return;
-        }
-
-        if (req.url.match(/^\/answer\/(\d)$/)) {
-            let answer = RegExp.$1;
-
-            if (!state[req.headers.sessionid]) {
-                logger.warn(`${req.headers.name} - missing state... reinit`);
-                state[req.headers.sessionid] = {
-                    correctAnswers: 0,
-                    incorrectAnswers: 0,
-                    player_name: req.headers.name
-                };
-            }
-
-            setAnswer(state[req.headers.sessionid], state[req.headers.sessionid].answer);
-
-            res.end(JSON.stringify({
-                success: true,
-                setTo: answer
-            }));
-
-            logger.info(`${req.headers.name} - answer ${answer}`);
-            return;
-        }
-
-        if (req.url === '/' || req.url === '') {
-            const filePath = path.join(__dirname, 'player.html');
-            const stat = fs.statSync(filePath);
-            res.writeHead(200, {
-                'Content-Type': 'text/html',
-                'Content-Length': stat.size
+    setTimeout(
+        function () {
+            game.hangingRequests.forEach(function (res) {
+                res.end(
+                    JSON.stringify({
+                        scores: forWebsite,
+                    })
+                );
             });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
-            return;
-        }
-
-        if (req.url == '/readonly') {
-            const filePath = path.join(__dirname, 'monitor.html');
-            const stat = fs.statSync(filePath);
-            res.writeHead(200, {
-                'Content-Type': 'text/html',
-                'Content-Length': stat.size
-            });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
-            return;
-        }
-
-        if (req.url.match(/\/(.+?\.png)$/)) {
-            const filePath = path.join(__dirname, RegExp.$1);
-            const stat = fs.statSync(filePath);
-            res.writeHead(200, {
-                'Content-Type': 'image/png',
-                'Content-Length': stat.size
-            });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
-            return;
-        }
-
-        if (req.url === '/status') {
-            hangingRequests.push(res);
-            return;
-        }
-
-        if (req.url === '/status/nowait') {
-            res.end(JSON.stringify({
-                scores: getStats(true),
-                round: questionCounter,
-                started: gameStarted
-            }));
-            return;
-        }
-
-        res.writeHead(404, { "Content-Type": "text/plain" });
-        res.write("404 Not Found\n");
-        res.end();
-    }
-}
-
-function setupTelnet(port) {
-    const server = net.createServer(function(socket) {
-        const logging_name = socket.logging_name = socket.remoteAddress;
-
-        // Setup logging on socket object
-        ['info', 'warn', 'error', 'verbose'].forEach(level => {
-            socket[level] = (msg, interpolate) => logger[level](`${socket.logging_name} ${msg}`, interpolate);
-        });
-
-        // Easy writing to socket
-        socket.send = function(msg, interpolate) {
-            if (!socket.writable) {
-                return;
-            }
-
-            if (interpolate !== undefined) {
-                socket.write(util.format(msg, interpolate).bold + '\r\n');
-            } else {
-                socket.write(msg.bold + '\r\n');
-            }
-        };
-
-        socket.info('connected');
-
-        socket.send('');
-        socket.send('');
-        socket.send('Welcome to the Cloudbeds Quiz 2020');
-        socket.send('=================================='.rainbow);
-        socket.send('');
-
-        if (!state[socket.remoteAddress]) {
-            state[socket.remoteAddress] = {};
-            state[socket.remoteAddress].correctAnswers = 0;
-            state[socket.remoteAddress].incorrectAnswers = 0;
-        }
-
-        state[socket.remoteAddress].socket = socket;
-        state[socket.remoteAddress].telnet = true;
-
-        if (state[socket.remoteAddress].player_name) {
-            save_name(socket, state[socket.remoteAddress], state[socket.remoteAddress].player_name);
-        } else {
-            socket.send('Enter your player name (change later with "change_name"):');
-        }
-
-        socket.on('data', function(data) {
-            data = data.toString().replace(/[\n\r]/g, '');
-            if (data === '')
-                return;
-
-            socket.verbose('data: %s', data);
-
-            handleInput(socket, state[socket.remoteAddress], data);
-        });
-
-        socket.on('error', function(err) {
-            if (socket && socket.error)
-                socket.error('error: %s', err);
-            else
-                logger.error(`${logging_name} %s`, err);
-        });
-
-        socket.on('close', function() {
-            if (socket && socket.warning)
-                socket.warning('disconnected');
-            else
-                logger.warn(`${logging_name} disconnected`);
-        });
-    });
-
-    server.listen(port);
-
-    logger.info(`telnet server is listening on ${port}`);
-
-    server.on('error', function(err) {
-        logger.error('server-event:error %s', err);
-    });
-}
-
-function loadQuestions() {
-    csv()
-        .fromFile(csvFilePath)
-        .then((jsonObj) => {
-            questions = jsonObj;
-        });
+            game.hangingRequests = [];
+        },
+        withDelay ? 500 : 0
+    );
 }
 
 function evaluateAnswer(players, playerId, question) {
@@ -633,37 +430,37 @@ function evaluateAnswer(players, playerId, question) {
         } else {
             return { correctAnswer: 1, answeredCorrectly: false };
         }
-    }
-    // Wat?
-    else {
+    } else {
         logger.error('Invalid special flag');
         return { correctAnswer: 1, answeredCorrectly: true };
     }
 }
 
-function setAnswer(player, answer) {
-    if (!player.answer) {
-        logger.debug(`${player.player_name} sets answer to ${answer}`);
-        if (questions[questionCounter]['Special Flag'] === 2 && answer === 3) {
-            player.answeredAt = new Date();
-        } else if (questions[questionCounter]['Special Flag'] !== 2) {
-            player.answeredAt = new Date();
+function kick(players, playerId) {
+    let player = players[playerId];
+    if (!player) {
+        let matchingPlayers = Object.values(players).filter((obj) => {
+            return obj.playerName == playerId;
+        });
+        if (matchingPlayers.length) {
+            player = matchingPlayers[0];
         }
-    } else {
-        logger.debug(`${player.player_name} changes answer to ${answer}`);
     }
 
-    player.answer = answer;
-}
+    if (!player) {
+        logger.error('No such player');
+        return;
+    }
 
-function setupHTTP(port, requestHandler) {
-    const httpServer = http.createServer(requestHandler);
-
-    httpServer.listen(port, (err) => {
-        if (err) {
-            return logger.error('something bad happened', err)
+    if (player.socket) {
+        logger.debug('Ending socket');
+        try {
+            player.socket.destroy();
+        } catch (err) {
+            logger.error('Could not destroy socket');
         }
+    }
 
-        logger.info(`web server is listening on ${port} - http://localhost:${port}`);
-    });
+    delete players[playerId];
+    logger.info('Player kicked');
 }
