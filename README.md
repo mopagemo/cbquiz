@@ -7,8 +7,8 @@ server. Can be used via web browser or telnet/netcat.
 
 ## Ports
 
--   Default HTTP port: 3300
--   Default netcat/telnet port: 1337
+- Default HTTP port: 3300
+- Default netcat/telnet port: 1337
 
 # Usage
 
@@ -35,15 +35,15 @@ present for sorting by difficulty in Google Sheets.
 
 Admin commands are accepted via command line at run time. Commands:
 
--   `start`: starts the quiz with the first question
--   `q 3`: skip to question 3
--   `next` or `n`: go to next question
--   `board` or `stats`: update/display leaderboard to all clients (debugging use mostly)
--   `webboard` or `webstats`: update leaderboard to all HTTP clients (debugging use mostly)
--   `time 10` or `t 10`: change question timeout to 10 seconds
--   `debug` or `debug on`: turn on debug level logging
--   `debug off`: turn of debug level logging
--   `debug state`: outputs information about connected clients
+- `start`: starts the quiz with the first question
+- `q 3`: skip to question 3
+- `next` or `n`: go to next question
+- `board` or `stats`: update/display leaderboard to all clients (debugging use mostly)
+- `webboard` or `webstats`: update leaderboard to all HTTP clients (debugging use mostly)
+- `time 10` or `t 10`: change question timeout to 10 seconds
+- `debug` or `debug on`: turn on debug level logging
+- `debug off`: turn of debug level logging
+- `debug state`: outputs information about connected clients
 
 To not participate and to share questions/results on screen go to
 `http://localhost:3300/readonly`. This uses this `monitor.html` file, whereas
