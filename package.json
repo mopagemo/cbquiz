@@ -5,12 +5,16 @@
     "main": "quiz.js",
     "author": "Mo Dulies",
     "scripts": {
-        "start": "node ./quiz.js"
+        "start": "node ./quiz.js",
+        "prettify": "prettier --write ."
     },
     "dependencies": {
         "colors": "^1.4.0",
         "csvtojson": "^2.0.10",
         "minimist": "^1.2.5",
         "winston": "^3.3.3"
+    },
+    "devDependencies": {
+        "prettier": "^2.2.1"
     }
 }
