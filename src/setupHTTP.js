@@ -20,7 +20,7 @@ const RequestUrls = {
     StatusNoWait: '/status/nowait',
 };
 
-function setAnswer(player, answer) {
+function setAnswer(game, player, answer) {
     if (!player.answer) {
         logger.debug(`${player.playerName} sets answer to ${answer}`);
         if (questions[game.questionCounter]['Special Flag'] === 2 && answer === 3) {
@@ -99,7 +99,7 @@ function setupRequestHandler(game, players) {
                 };
             }
 
-            setAnswer(players[req.headers.sessionid], players[req.headers.sessionid].answer);
+            setAnswer(game, players[req.headers.sessionid], answer);
 
             res.end(
                 JSON.stringify({

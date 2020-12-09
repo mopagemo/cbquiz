@@ -6,7 +6,7 @@ const logger = require('./logger');
 function handleInput(socket, game, state, input) {
     if (!state.has_name) {
         socket.info(`name set to ${input}`);
-        return saveName(socket, state, input);
+        return saveName(socket, state, input, game.showStats);
     }
 
     if (input === 'change_name') {

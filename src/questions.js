@@ -1,12 +1,12 @@
 const csvToJson = require('csvtojson');
 
-const questions = {};
+const questions = [];
 
 exports.loadQuestions = function(csvFilePath) {
     csvToJson()
         .fromFile(csvFilePath)
-        .then((jsonObj) => {
-            Object.assign(questions, jsonObj);
+        .then((questionsFromJson) => {
+            questions.push(...questionsFromJson);
         });
 }
 

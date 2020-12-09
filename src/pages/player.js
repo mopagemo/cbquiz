@@ -80,7 +80,8 @@ function poll(noWait) {
                 item.style.display = 'none';
             });
 
-            document.querySelector('.question').textContent = response.question.Question;
+            // Yes, I want HTML support. Screw you XSS.
+            document.querySelector('.question').innerHTML = response.question.Question;
 
             [1, 2, 3, 4].forEach((i) => {
                 let answerContainer = document.querySelector(`.answer${i}`);

@@ -44,6 +44,9 @@ body {
     top: 5%;
     width: 62%;
 }
+.question pre {
+    margin: 0;
+}
 .answer {
     font-size: 2.1vw;
     position: absolute;
