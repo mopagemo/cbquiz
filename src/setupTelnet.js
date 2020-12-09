@@ -6,7 +6,7 @@ const logger = require('./logger');
 function handleInput(socket, game, state, input) {
     if (!state.has_name) {
         socket.info(`name set to ${input}`);
-        return saveName(socket, state, input);
+        return saveName(socket, state, input, game.showStats);
     }
 
     if (input === 'change_name') {
@@ -38,7 +38,7 @@ function handleInput(socket, game, state, input) {
     }
 }
 
-function saveName(socket, state, input) {
+function saveName(socket, state, input, showStats) {
     input = input.replace(/[^a-zA-Z]/g, '');
     if (!input) {
         socket.send('Invalid name. Try again.'.red);
@@ -92,7 +92,7 @@ module.exports = function setupTelnet(port, game, players) {
         players[socket.remoteAddress].telnet = true;
 
         if (players[socket.remoteAddress].playerName) {
-            saveName(socket, players[socket.remoteAddress], players[socket.remoteAddress].playerName);
+            saveName(socket, players[socket.remoteAddress], players[socket.remoteAddress].playerName, game.showStats);
         } else {
             socket.send('Enter your player name (change later with "change_name"):');
         }

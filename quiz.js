@@ -32,6 +32,7 @@ const game = {
     hangingRequests: [],
     questionCounter: -1,
     questionShowing: false,
+    showStats,
 };
 const players = {};
 
