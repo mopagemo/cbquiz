@@ -8,7 +8,7 @@ body {
     position: fixed;
     bottom: 0;
     width: 100%;
-    padding-bottom: 40px;
+    margin-bottom: 40px;
 }
 .question {
     font-size: 2.3vw;
@@ -25,21 +25,21 @@ body {
     font-size: 2.1vw;
     position: absolute;
     left: 22%;
-    top: 45%;
+    top: 48%;
     width: 27%;
     z-index: 2;
 }
 .answer2 {
     left: 56%;
-    top: 45%;
+    top: 48%;
 }
 .answer3 {
     left: 22%;
-    top: 69.5%;
+    top: 75%;
 }
 .answer4 {
     left: 56%;
-    top: 69.5%;
+    top: 75%;
 }
 
 .correct,
@@ -47,30 +47,33 @@ body {
     display: none;
     position: absolute;
     z-index: 1;
-    left: 16.5%;
-    top: 39.2%;
 }
 .correct {
     z-index: 2;
 }
 .correct img,
 .locked img {
-    width: 93%;
+    width: 34vw;
+}
+.correct1,
+.locked1 {
+    left: 16.5%;
+    top: 44%;
 }
 .correct2,
 .locked2 {
-    left: 49.9%;
-    top: 39.2%;
+    left: 50%;
+    top: 44%;
 }
 .correct3,
 .locked3 {
     left: 16.5%;
-    top: 63.7%;
+    top: 71.2%;
 }
 .correct4,
 .locked4 {
-    left: 49.9%;
-    top: 63.7%;
+    left: 50%;
+    top: 71.2%;
 }
 
 .leaderboard {
@@ -109,7 +112,6 @@ body {
 .answers table {
     border-collapse: collapse;
 }
-
 .answers td.is-correct {
     background-color: #94d20c;
     color: black;
@@ -120,7 +122,6 @@ body {
     color: black;
     padding: 3px;
 }
-
 .answers .player-answer {
     border-right: 3px solid black;
 }

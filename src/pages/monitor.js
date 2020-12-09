@@ -28,7 +28,7 @@ function autorun() {
                       Question ${response.round}
                       <div class="join">You can still join:<br />
                       telnet carapeto.pt 1337<br />
-                      http://quiz.carapeto.pt (-1 point)
+                      <a href="http://quiz.carapeto.pt">http://quiz.carapeto.pt (-1 point)</a>
                       </div>`;
             }
             if (response.scores) {

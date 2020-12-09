@@ -1,4 +1,5 @@
-.join {
+.join,
+.join a {
     font-size: 14px;
     color: fuchsia;
     padding-top: 10px;

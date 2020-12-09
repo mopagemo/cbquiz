@@ -64,7 +64,6 @@
 .answers table {
     border-collapse: collapse;
 }
-
 .answers td.is-correct {
     background-color: #94d20c;
     color: black;
@@ -75,7 +74,6 @@
     color: black;
     padding: 3px;
 }
-
 .answers .player-answer {
     border-right: 3px solid black;
 }
