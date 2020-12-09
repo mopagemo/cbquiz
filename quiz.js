@@ -186,7 +186,78 @@ function sendToTelnetPlayers(text) {
 function showResultAfterQuestion() {
     game.questionShowing = false;
 
-    let answers = [];
+    let answers = [
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: true,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: true,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+        {
+            name: 'some long name with surname',
+            answer: 'nada',
+            is_correct: false,
+        },
+    ];
     if (!questions[game.questionCounter]) {
         return;
     }
