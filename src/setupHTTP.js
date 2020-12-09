@@ -99,7 +99,7 @@ function setupRequestHandler(game, players) {
                 };
             }
 
-            setAnswer(game, players[req.headers.sessionid], players[req.headers.sessionid].answer);
+            setAnswer(game, players[req.headers.sessionid], answer);
 
             res.end(
                 JSON.stringify({
