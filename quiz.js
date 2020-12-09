@@ -34,6 +34,17 @@ const game = {
     questionShowing: false,
     showStats,
 };
+
+/**
+ * @typedef Player
+ * @property {string} playerName
+ * @property {string} answer
+ * @property {string} answeredAt
+ * @property {number} incorrectAnswers
+ * @property {number} correctAnswers
+ * @property {Object} socket
+ */
+/** @type {Object.<string, Player>} */
 const players = {};
 
 let QUESTION_TIME = 15;
@@ -112,11 +123,9 @@ function processAdmin(input) {
     }
 
     if (QuizCommands.DebugState.includes(input)) {
-        for (let playerId in players) {
-            logger.info(
-                `* ${playerId}: ${players[playerId].playerName} - ${players[playerId].telnet ? 'telnet' : 'web'}`
-            );
-        }
+        Object.entries(players).forEach(([playerId, player]) => {
+            logger.info(`* ${playerId}: ${player.playerName} - ${player.telnet ? 'telnet' : 'web'}`);
+        })
         return;
     }
 
@@ -285,7 +294,7 @@ game.getStats = function (onlyHttp) {
     let rank;
     let prevPlayer;
 
-    topPlayers.forEach(function (player) {
+    topPlayers.forEach(function (/** {Player} */ player) {
         if (player.playerName === undefined) {
             return;
         }
@@ -437,10 +446,11 @@ function evaluateAnswer(players, playerId, question) {
 }
 
 function kick(players, playerId) {
+    /** @type Player */
     let player = players[playerId];
     if (!player) {
         let matchingPlayers = Object.values(players).filter((obj) => {
-            return obj.playerName == playerId;
+            return obj.playerName === playerId;
         });
         if (matchingPlayers.length) {
             player = matchingPlayers[0];

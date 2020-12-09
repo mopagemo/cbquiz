@@ -36,7 +36,7 @@ function autorun() {
                     '<table><thead><tr><th>Rank</th><th>Player</th><th>Correct</th><th>Wrong</th></tr></thead><tbody>';
                 let counter = 0;
                 response.scores.forEach(function (player) {
-                    if (++counter > MAX_LEADERS && player.name != name) {
+                    if (++counter > MAX_LEADERS && player.name !== name) {
                         return;
                     }
                     tableHTML += `
