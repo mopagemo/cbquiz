@@ -19,7 +19,14 @@
         <div class="countdown"></div>
 
         <div class="name-entry">
-            <h2>Welcome to the (inofficial) Cloudbeds Quiz!</h2>
+            <h2>
+                Welcome to the
+                {{#if title}}
+                {{title}}
+                {{else}}
+                quiz
+                {{/if}}
+            </h2>
             <input type="text" class="player-name" placeholder="Please enter your player name" />
             <button class="set-name">GO</button>
         </div>

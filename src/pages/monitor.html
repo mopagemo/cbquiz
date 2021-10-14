@@ -16,13 +16,29 @@
             <div class="answers"></div>
         </div>
         <div class="round">
-            Not started yet
-            <br />
-            <br />
-            To join:
-            <br />
-            <pre>telnet carapeto.pt 1337</pre>
-            <pre>http://quiz.carapeto.pt (-1 point)</pre>
+            <div class="pre-game">
+                Not started yet
+                <br />
+                <br />
+                To join:
+                <br />
+                telnet {{telnetHost}} {{telnetPort}}<br />
+                {{httpHost}}
+                {{#if httpHandicap}}
+                  ({{httpHandicap}} points)
+                {{/if}}
+            </div>
+            <div class="during-game" style="display:none">
+                Question <span class="game-round"></span>
+
+                <div class="join">You can still join:<br />
+                telnet {{telnetHost}} {{telnetPort}}<br />
+                {{httpHost}}
+                {{#if httpHandicap}}
+                  ({{httpHandicap}} points)
+                {{/if}}
+                </div>
+            </div>
         </div>
         <div class="countdown"></div>
 

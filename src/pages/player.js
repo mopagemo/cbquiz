@@ -60,7 +60,7 @@ function poll(noWait) {
                 tableHTML += `
                         <tr>
                         <td class="rank">${player.rank}.</td>
-                        <td class="name">${player.name}</td>
+                        <td class="name">${escapeHtml(player.name)}</td>
                         <td class="qcorrect">${player.correct}</td>
                         <td class="qwrong">${player.wrong}</td>
                         </tr>
@@ -83,25 +83,23 @@ function poll(noWait) {
             // Yes, I want HTML support. Screw you XSS.
             document.querySelector('.question').innerHTML = response.question.Question;
 
+
             [1, 2, 3, 4].forEach((i) => {
                 let answerContainer = document.querySelector(`.answer${i}`);
+                let answerContainerSize = answerContainer.scrollWidth - 20;
+
                 let answer = response.question[`Answer ${i}`];
-                if (answer.length <= 12) {
-                    answerContainer.style.fontSize = '2.5vw';
-                } else if (answer.length <= 15) {
-                    answerContainer.style.fontSize = '2.2vw';
-                } else if (answer.length <= 20) {
-                    answerContainer.style.fontSize = '1.7vw';
-                } else if (answer.length <= 25) {
-                    answerContainer.style.fontSize = '1.4vw';
-                } else if (answer.length <= 50) {
-                    answerContainer.style.fontSize = '1.2vw';
-                } else if (answer.length <= 70) {
-                    answerContainer.style.fontSize = '1.0vw';
-                } else {
-                    answerContainer.style.fontSize = '0.9vw';
+
+                let tryFontSize;
+
+                for(tryFontSize = 37; tryFontSize > 8; tryFontSize--) {
+                    if(textWidth(answer, tryFontSize) < answerContainerSize) {
+                        break;
+                    }
                 }
-                answerContainer.textContent = answer;
+
+                answerContainer.style.fontSize = tryFontSize + 'pt';
+                answerContainer.innerHTML = answer;
             });
         }
         if (response.correct) {

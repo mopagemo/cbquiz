@@ -19,8 +19,17 @@ Alternatively start by executing `./quiz.js` or `npm start` which will use `ques
 Custom ports can be specified with the `port` and `telnet-port` flags, e.g.
 
 ```
-./quiz.js --port 9000 --telnet-port 3333
+./quiz.js my-questions.csv --http-port 9000 --telnet-port 3333
 ```
+
+All command line options:
+
+- `http-port`: which port to run the webserver on (default: `3300`)
+- `http-host`: which URL the webserver can be reached at, for display to participants only (default: `http://localhost:${port}`)
+- `telnet-port`: which port to listen for telnet/netcat (default: `1337`)
+- `telnet-host`: which host to show to the participants for connecting to (default `localhost`)
+- `http-handicap`: negative points to give to people connecting via HTTP instead of telnet, because telnet is more l33t (default: `0`)
+- `title`: what the quiz is called. Shown when asking participants to enter their name (default: `quiz`)
 
 `questions.csv` needs to look like this:
 
@@ -46,5 +55,5 @@ Admin commands are accepted via command line at run time. Commands:
 - `debug state`: outputs information about connected clients
 
 To not participate and to share questions/results on screen go to
-`http://localhost:3300/readonly`. This uses this `monitor.html` file, whereas
+`http://localhost:3300/readonly`. This uses the `monitor.html` file, whereas
 participating players use `player.html`.

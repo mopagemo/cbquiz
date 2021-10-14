@@ -27,12 +27,32 @@ rl.on('line', (input) => {
     processAdmin(input);
 });
 
+const httpPort = argv['http-port'] || 3300;
+const httpHost = argv['http-host]'] || `http${httpPort == 443 ? 's' : ''}://localhost${httpPort == 80 || httpPort == 443 ? '' : ':' + httpPort}`;
+
+const telnetHost = argv['telnet-host'] || 'localhost';
+const telnetPort = argv['telnet-port'] || 1337;
+
+let httpHandicap = 0;
+if(argv['http-handicap'] && typeof(argv['http-handicap']) == 'number') {
+    httpHandicap = argv['http-handicap'] < 0 ? argv['http-handicap'] : argv['http-handicap'] * -1;
+}
+
 const game = {
     started: false,
     hangingRequests: [],
     questionCounter: -1,
     questionShowing: false,
     showStats,
+
+    templateVars: {
+        title: argv.title,
+        httpHandicap: httpHandicap,
+        httpHost: httpHost,
+        httpPort: httpPort,
+        telnetHost: telnetHost,
+        telnetPort: telnetPort,
+    }
 };
 const players = {};
 
@@ -40,8 +60,10 @@ let QUESTION_TIME = 15;
 let questionTimer;
 
 loadQuestions(csvFilePath);
-setupHTTP(argv.port || 3300, game, players);
-setupTelnet(argv['telnet-port'] || 1337, game, players);
+setupHTTP(httpPort, game, players);
+setupTelnet(telnetPort, game, players);
+
+logger.info(`HTTP handicap set to ${httpHandicap}`);
 
 const QuizCommands = {
     Start: ['start'],
@@ -347,7 +369,7 @@ function showStats(onlyHttp, withDelay) {
 function evaluateAnswer(players, playerId, question) {
     if (!question['Special Flag']) {
         if (!players[playerId].answer) {
-            return { correctAnswer: question['Correct Answer'], answeredCorrectly: false };
+            return { correctAnswer: question['Correct Answer'], answeredCorrectly: undefined };
         }
 
         if (players[playerId].answer === question['Correct Answer']) {
@@ -358,7 +380,7 @@ function evaluateAnswer(players, playerId, question) {
     }
 
     // Answer selected fewest times
-    if (question['Special Flag'] === 1) {
+    if (question['Special Flag'] == 1) {
         let answerCount = [999, 0, 0, 0, 0];
         for (let countPlayer in players) {
             if (!players[countPlayer].answer) {
@@ -369,9 +391,12 @@ function evaluateAnswer(players, playerId, question) {
         }
 
         let highestCount = Math.min(...answerCount);
+        logger.debug(`Highest count: ${highestCount}`);
+
         for (let i = 1; i <= 4; i++) {
             if (answerCount[i] === highestCount) {
-                if (players[playerId].answer === i) {
+                if (players[playerId].answer == i) {
+                    logger.debug(`${playerId} - correct`);
                     return { correctAnswer: i, answeredCorrectly: true };
                 }
             }
@@ -380,7 +405,7 @@ function evaluateAnswer(players, playerId, question) {
         return { correctAnswer: answerCount.indexOf(highestCount), answeredCorrectly: false };
     }
     // The fastest to choose
-    else if (question['Special Flag'] === 2) {
+    else if (question['Special Flag'] == 2) {
         let fastestTime = new Date().getTime();
         let fastestPlayer = undefined;
 
@@ -406,7 +431,7 @@ function evaluateAnswer(players, playerId, question) {
         }
     }
     // The last to choose
-    else if (question['Special Flag'] === 3) {
+    else if (question['Special Flag'] == 3) {
         let latestTime = 0;
         let latestPlayer = undefined;
 
@@ -415,7 +440,7 @@ function evaluateAnswer(players, playerId, question) {
                 continue;
             }
 
-            if (players[countPlayer].answer !== 1) {
+            if (players[countPlayer].answer != 1) {
                 continue;
             }
 

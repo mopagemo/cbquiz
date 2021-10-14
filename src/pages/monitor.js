@@ -24,12 +24,9 @@ function autorun() {
         .then((response) => {
             console.log('incoming', response);
             if (response.round !== undefined && response.started) {
-                document.querySelector('.round').innerHTML = `
-                      Question ${response.round}
-                      <div class="join">You can still join:<br />
-                      telnet carapeto.pt 1337<br />
-                      <a href="http://quiz.carapeto.pt">http://quiz.carapeto.pt (-1 point)</a>
-                      </div>`;
+                document.querySelector('.pre-game').style.display = 'none';
+                document.querySelector('.game-round').innerHTML = response.round;
+                document.querySelector('.during-game').style.display = 'block';
             }
             if (response.scores) {
                 let tableHTML =
@@ -42,7 +39,7 @@ function autorun() {
                     tableHTML += `
                             <tr>
                             <td class="rank">${player.rank}.</td>
-                            <td class="name">${player.name}</td>
+                            <td class="name">${escapeHtml(player.name)}</td>
                             <td class="qcorrect">${player.correct}</td>
                             <td class="qwrong">${player.wrong}</td>
                             </tr>
@@ -64,23 +61,20 @@ function autorun() {
 
                 [1, 2, 3, 4].forEach((i) => {
                     let answerContainer = document.querySelector(`.answer${i}`);
+                    let answerContainerSize = answerContainer.scrollWidth - 20;
+
                     let answer = response.question[`Answer ${i}`];
-                    if (answer.length <= 12) {
-                        answerContainer.style.fontSize = '2.5vw';
-                    } else if (answer.length <= 15) {
-                        answerContainer.style.fontSize = '2.2vw';
-                    } else if (answer.length <= 20) {
-                        answerContainer.style.fontSize = '1.7vw';
-                    } else if (answer.length <= 25) {
-                        answerContainer.style.fontSize = '1.4vw';
-                    } else if (answer.length <= 50) {
-                        answerContainer.style.fontSize = '1.2vw';
-                    } else if (answer.length <= 70) {
-                        answerContainer.style.fontSize = '1.0vw';
-                    } else {
-                        answerContainer.style.fontSize = '0.9vw';
+
+                    let tryFontSize;
+
+                    for(tryFontSize = 37; tryFontSize > 8; tryFontSize--) {
+                        if(textWidth(answer, tryFontSize) < answerContainerSize) {
+                            break;
+                        }
                     }
-                    answerContainer.textContent = answer;
+
+                    answerContainer.style.fontSize = tryFontSize + 'pt';
+                    answerContainer.innerHTML = answer;
                 });
             }
             if (response.correct) {

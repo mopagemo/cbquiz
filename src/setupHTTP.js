@@ -2,6 +2,8 @@ const fs = require('fs');
 const http = require('http');
 const path = require('path');
 
+const handlebars = require('handlebars');
+
 const logger = require('./logger');
 const { questions } = require('./questions');
 
@@ -61,7 +63,7 @@ function setupRequestHandler(game, players) {
             }
 
             players[req.headers.sessionid] = {
-                correctAnswers: -1,
+                correctAnswers: 0,
                 incorrectAnswers: 0,
                 playerName: req.headers.name,
                 socket: { send: function () {} },
@@ -96,6 +98,7 @@ function setupRequestHandler(game, players) {
                     correctAnswers: 0,
                     incorrectAnswers: 0,
                     playerName: req.headers.name,
+                    socket: { send: function () {} },
                 };
             }
 
@@ -113,26 +116,15 @@ function setupRequestHandler(game, players) {
         }
 
         if (['', '/'].includes(req.url)) {
+
             const filePath = path.join(__dirname, 'pages', 'player.html');
-            const stat = fs.statSync(filePath);
-            res.writeHead(200, {
-                'Content-Type': 'text/html',
-                'Content-Length': stat.size,
-            });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
+            sendHTML(res, filePath, game);
             return;
         }
 
         if (req.url === RequestUrls.ReadOnly) {
             const filePath = path.join(__dirname, 'pages', 'monitor.html');
-            const stat = fs.statSync(filePath);
-            res.writeHead(200, {
-                'Content-Type': 'text/html',
-                'Content-Length': stat.size,
-            });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
+            sendHTML(res, filePath, game);
             return;
         }
 
@@ -190,3 +182,14 @@ module.exports = function setupHTTP(port, game, players) {
         logger.info(`web server is listening on ${port} - http://localhost:${port}`);
     });
 };
+
+function sendHTML(res, filepath, game) {
+    const stat = fs.statSync(filepath);
+    res.writeHead(200, {
+        'Content-Type': 'text/html',
+        'Content-Length': stat.size,
+    });
+
+    const template = handlebars.compile(fs.readFileSync(filepath).toString());
+    res.end(template(game.templateVars));
+}
