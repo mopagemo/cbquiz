@@ -28,7 +28,7 @@ rl.on('line', (input) => {
 });
 
 const httpPort = argv['http-port'] || 3300;
-const httpHost = argv['http-host]'] || `http${httpPort == 443 ? 's' : ''}://localhost${httpPort == 80 || httpPort == 443 ? '' : ':' + httpPort}`;
+const httpHost = argv['http-host'] || `http${httpPort == 443 ? 's' : ''}://localhost${httpPort == 80 || httpPort == 443 ? '' : ':' + httpPort}`;
 
 const telnetHost = argv['telnet-host'] || 'localhost';
 const telnetPort = argv['telnet-port'] || 1337;
@@ -60,6 +60,8 @@ let QUESTION_TIME = 15;
 let questionTimer;
 
 loadQuestions(csvFilePath);
+logger.info(`Loaded questions from ${csvFilePath}`);
+
 setupHTTP(httpPort, game, players);
 setupTelnet(telnetPort, game, players);
 
@@ -174,11 +176,14 @@ function showQuestion(questionIndex) {
     sendToTelnetPlayers(`3) ${questions[questionIndex]['Answer 3']}`);
     sendToTelnetPlayers(`4) ${questions[questionIndex]['Answer 4']}`);
 
+    let playerPayload = Object.assign({}, questions[questionIndex]);
+    delete playerPayload['Correct Answer'];
+
     game.hangingRequests.forEach(function (res) {
         res.end(
             JSON.stringify({
                 round: questionIndex,
-                question: questions[questionIndex],
+                question: playerPayload,
                 timeleft: QUESTION_TIME,
                 started: game.started,
             })

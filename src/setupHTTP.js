@@ -179,7 +179,7 @@ module.exports = function setupHTTP(port, game, players) {
             return logger.error('something bad happened', err);
         }
 
-        logger.info(`web server is listening on ${port} - http://localhost:${port}`);
+        logger.info(`web server is listening on ${port} - ${game.templateVars.httpHost}`);
     });
 };
 
