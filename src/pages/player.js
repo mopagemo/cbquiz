@@ -47,7 +47,7 @@ function poll(noWait) {
         }
 
         if (response.round !== undefined && response.started) {
-            document.querySelector('.round').textContent = 'Question ' + response.round;
+            document.querySelector('.round').textContent = 'Question ' + (response.round + 1);
         }
         if (response.scores) {
             let tableHTML =
@@ -75,6 +75,12 @@ function poll(noWait) {
             lastAnswer = null;
             document.querySelector('.answerboard').style.display = 'none';
             document.querySelector('.answers').innerHTML = '';
+
+            if(response.question.Image) {
+                document.querySelector('.question-image').innerHTML = `<img src="${response.question.Image}" />`;
+            } else {
+                document.querySelector('.question-image').innerHTML = '';
+            }
 
             document.querySelectorAll('.correct').forEach(function (item) {
                 item.style.display = 'none';
@@ -107,6 +113,7 @@ function poll(noWait) {
             document.querySelector('.correct' + response.correct).style.display = 'block';
         }
         if (response.lastanswers) {
+            document.querySelector('.question-image').innerHTML = ``;
             document.querySelector('.answerboard').style.display = 'block';
             let tableHTML =
                 '<table><thead><tr><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th></tr></thead><tbody>';

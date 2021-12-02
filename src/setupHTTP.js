@@ -10,10 +10,11 @@ const { questions } = require('./questions');
 const RequestUrls = {
     AnswerRegex: /^\/answer\/(\d)$/,
 
-    AssetsRegex: /\/(.+?\.(?:png|css|js))$/,
+    AssetsRegex: /\/(.+?\.(?:png|css|js|ico))$/,
     PngRegex: /\/(.+?\.png)$/,
     CssRegex: /\/(.+?\.css)$/,
     JsRegex: /\/(.+?\.js)$/,
+    IcoRegex: /\/(.+?\.ico)$/,
 
     RegisterName: '/register-name',
     ReadOnly: '/readonly',
@@ -130,21 +131,29 @@ function setupRequestHandler(game, players) {
 
         if (RequestUrls.AssetsRegex.test(req.url)) {
             const filePath = path.join(__dirname, 'pages', RegExp.$1);
-            const stat = fs.statSync(filePath);
-            let contentType;
-            if (RequestUrls.PngRegex.test(req.url)) {
-                contentType = 'image/png';
-            } else if (RequestUrls.CssRegex.test(req.url)) {
-                contentType = 'text/css';
-            } else if (RequestUrls.JsRegex.test(req.url)) {
-                contentType = 'text/javascript';
+            try {
+                const stat = fs.statSync(filePath);
+                let contentType;
+                if (RequestUrls.PngRegex.test(req.url)) {
+                    contentType = 'image/png';
+                } else if (RequestUrls.CssRegex.test(req.url)) {
+                    contentType = 'text/css';
+                } else if (RequestUrls.JsRegex.test(req.url)) {
+                    contentType = 'text/javascript';
+                } else if (RequestUrls.IcoRegex.test(req.url)) {
+                    contentType = 'image/x-icon';
+                }
+                res.writeHead(200, {
+                    'Content-Type': contentType,
+                    'Content-Length': stat.size,
+                });
+                const readStream = fs.createReadStream(filePath);
+                readStream.pipe(res);
+            } catch(err) {
+                res.writeHead(404, { 'Content-Type': 'text/plain' });
+                res.write('404 Not Found\n');
+                res.end();
             }
-            res.writeHead(200, {
-                'Content-Type': contentType,
-                'Content-Length': stat.size,
-            });
-            const readStream = fs.createReadStream(filePath);
-            readStream.pipe(res);
             return;
         }
 
@@ -187,7 +196,6 @@ function sendHTML(res, filepath, game) {
     const stat = fs.statSync(filepath);
     res.writeHead(200, {
         'Content-Type': 'text/html',
-        'Content-Length': stat.size,
     });
 
     const template = handlebars.compile(fs.readFileSync(filepath).toString());

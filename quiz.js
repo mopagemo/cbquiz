@@ -91,7 +91,7 @@ function processAdmin(input) {
     }
 
     if (QuizCommands.SetQuestionRegex.test(input)) {
-        game.questionCounter = parseInt(RegExp.$1);
+        game.questionCounter = parseInt(RegExp.$1) + 1;
         showQuestion(game.questionCounter);
         return;
     }
@@ -169,6 +169,9 @@ function showQuestion(questionIndex) {
     let telnetFormattedQuestion = questions[questionIndex].Question.replace(/<\/?.+?>/g, '');
 
     sendToTelnetPlayers('');
+    if(questions[questionIndex].Image) {
+        sendToTelnetPlayers(`LOOK AT ZOOM FOR THE PICTURE!`.underline.brightRed.bold);
+    }
     sendToTelnetPlayers(`Question ${questionIndex + 1}:`.underline.brightYellow);
     sendToTelnetPlayers(telnetFormattedQuestion);
     sendToTelnetPlayers(`1) ${questions[questionIndex]['Answer 1']}`);

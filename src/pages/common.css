@@ -125,3 +125,12 @@ body {
 .answers .player-answer {
     border-right: 3px solid black;
 }
+.question-image {
+    position: relative;
+    top: -90px;
+    text-align: center;
+}
+.question-image img {
+    margin: 0 auto;
+    max-height: 300px;
+}

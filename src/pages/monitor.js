@@ -25,7 +25,7 @@ function autorun() {
             console.log('incoming', response);
             if (response.round !== undefined && response.started) {
                 document.querySelector('.pre-game').style.display = 'none';
-                document.querySelector('.game-round').innerHTML = response.round;
+                document.querySelector('.game-round').innerHTML = response.round + 1;
                 document.querySelector('.during-game').style.display = 'block';
             }
             if (response.scores) {
@@ -56,6 +56,12 @@ function autorun() {
                     item.style.display = 'none';
                 });
 
+                if(response.question.Image) {
+                    document.querySelector('.question-image').innerHTML = `<img src="${response.question.Image}" />`;
+                } else {
+                    document.querySelector('.question-image').innerHTML = '';
+                }
+
                 // Yes, I want HTML support. Screw you XSS.
                 document.querySelector('.question').innerHTML = response.question.Question;
 
@@ -81,6 +87,7 @@ function autorun() {
                 document.querySelector('.correct' + response.correct).style.display = 'block';
             }
             if (response.lastanswers) {
+                document.querySelector('.question-image').innerHTML = ``;
                 document.querySelector('.answerboard').style.display = 'block';
                 let tableHTML =
                     '<table><thead><tr><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th></tr></thead><tbody>';
