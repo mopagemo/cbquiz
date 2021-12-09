@@ -91,7 +91,7 @@ function processAdmin(input) {
     }
 
     if (QuizCommands.SetQuestionRegex.test(input)) {
-        game.questionCounter = parseInt(RegExp.$1) + 1;
+        game.questionCounter = parseInt(RegExp.$1) - 1;
         showQuestion(game.questionCounter);
         return;
     }

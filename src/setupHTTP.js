@@ -39,6 +39,11 @@ function setAnswer(game, player, answer) {
 }
 
 function setupRequestHandler(game, players) {
+    let handicap = 0;
+    if(game.templateVars.httpHandicap) {
+        handicap = game.templateVars.httpHandicap;
+    }
+
     return (req, res) => {
         res.setHeader('Access-Control-Allow-Origin', '*');
         res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS, PUT, PATCH, DELETE');
@@ -64,7 +69,7 @@ function setupRequestHandler(game, players) {
             }
 
             players[req.headers.sessionid] = {
-                correctAnswers: 0,
+                correctAnswers: handicap,
                 incorrectAnswers: 0,
                 playerName: req.headers.name,
                 socket: { send: function () {} },
