@@ -33,6 +33,9 @@ function autorun() {
                     '<table><thead><tr><th>Rank</th><th>Player</th><th>Correct</th><th>Wrong</th></tr></thead><tbody>';
                 let counter = 0;
                 response.scores.forEach(function (player) {
+                    if(!player.name || player.name == 'undefined') {
+                        return;
+                    }
                     if (++counter > MAX_LEADERS && player.name != name) {
                         return;
                     }
@@ -93,13 +96,16 @@ function autorun() {
                     '<table><thead><tr><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th><th>Player</th><th>Answer</th></tr></thead><tbody>';
                 let resultCounter = 0;
                 response.lastanswers.forEach(function (player) {
+                    if(!player.name || player.name == 'undefined') {
+                        return;
+                    }
                     if (resultCounter % PLAYER_ROWS == 0) {
                         tableHTML += `
     <tr>
     `;
                     }
                     tableHTML += `
-    <td class="${player.is_correct ? 'is-correct' : 'is-wrong'}">${player.name}</td>
+    <td class="${player.is_correct ? 'is-correct' : 'is-wrong'}">${escapeHtml(player.name)}</td>
     <td class="player-answer ${player.is_correct ? 'is-correct' : 'is-wrong'}">${player.answer}</td>
     `;
                     resultCounter++;
