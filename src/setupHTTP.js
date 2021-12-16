@@ -151,6 +151,7 @@ function setupRequestHandler(game, players) {
                 res.writeHead(200, {
                     'Content-Type': contentType,
                     'Content-Length': stat.size,
+                    'Cache-Control': 'max-age=172800',
                 });
                 const readStream = fs.createReadStream(filePath);
                 readStream.pipe(res);
